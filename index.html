@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --card-bg: #fff;
+            --card-border: #ddd;
+            --accent-color: #4caf50;
+            --button-bg: #4caf50;
+            --button-text: white;
+            --modal-bg: white;
+            --menu-bg: white;
+        }
+
+        .dark-theme {
+            --bg-color: #222;
+            --text-color: #eee;
+            --card-bg: #333;
+            --card-border: #444;
+            --accent-color: #66bb6a;
+            --button-bg: #2e7d32;
+            --button-text: #eee;
+            --modal-bg: #333;
+            --menu-bg: #333;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .menu {
+            background-color: var(--menu-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .option-group h3 {
+            margin-top: 0;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 5px;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .start-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .theme-switch {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .theme-label {
+            margin-right: 10px;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .card {
+            aspect-ratio: 1 / 1;
+            background-color: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+            transform-style: preserve-3d;
+        }
+
+        .card:hover {
+            transform: scale(1.02);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-front {
+            background-color: var(--accent-color);
+            transform: rotateY(180deg);
+        }
+
+        .card-back {
+            background-color: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 5px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--text-color);
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .records-table th, .records-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            #game-board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .game-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="theme-switch">
+            <span class="theme-label">Ночной режим</span>
+            <label class="switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <h1>Memory Game</h1>
+
+        <!-- Главное меню -->
+        <div id="main-menu" class="menu">
+            <div class="game-options">
+                <div class="option-group">
+                    <h3>Выберите тему</h3>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="theme" value="animals" checked>
+                            Животные
+                        </label>
+                        <label>
+                            <input type="radio" name="theme" value="cars">
+                            Машины
+                        </label>
+                        <label>
+                            <input type="radio" name="theme" value="nature">
+                            Природа
+                        </label>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <h3>Режим игры</h3>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="mode" value="normal" checked>
+                            Обычный
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="hard">
+                            Сложный (карточки перемешиваются)
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="notime">
+                            Без времени
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button id="start-game" class="start-button">Начать игру</button>
+                <button id="show-records" style="margin-top: 10px; width: 100%;">Мои рекорды</button>
+            </div>
+        </div>
+
+        <!-- Игровое поле -->
+        <div id="game-container" class="hidden">
+            <div class="game-info">
+                <div id="timer">Время: 0 сек</div>
+                <div id="moves">Ходы: 0</div>
+            </div>
+            <div id="game-board"></div>
+            <button id="back-to-menu" style="margin-top: 20px;">Вернуться в меню</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно рекордов -->
+    <div id="records-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Мои рекорды</h2>
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>Тема</th>
+                        <th>Режим</th>
+                        <th>Время</th>
+                        <th>Ходы</th>
+                    </tr>
+                </thead>
+                <tbody id="records-body">
+                    <!-- Здесь будут отображаться рекорды -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Модальное окно победы -->
+    <div id="win-modal" class="modal">
+        <div class="modal-content">
+            <h2>Поздравляем!</h2>
+            <p id="win-message"></p>
+            <button id="play-again">Играть снова</button>
+            <button id="win-back-to-menu">Вернуться в меню</button>
+        </div>
+    </div>
+
+    <script>
+        // Элементы DOM
+        const mainMenu = document.getElementById('main-menu');
+        const gameContainer = document.getElementById('game-container');
+        const gameBoard = document.getElementById('game-board');
+        const timerDisplay = document.getElementById('timer');
+        const movesDisplay = document.getElementById('moves');
+        const startGameBtn = document.getElementById('start-game');
+        const backToMenuBtn = document.getElementById('back-to-menu');
+        const showRecordsBtn = document.getElementById('show-records');
+        const recordsModal = document.getElementById('records-modal');
+        const recordsBody = document.getElementById('records-body');
+        const winModal = document.getElementById('win-modal');
+        const winMessage = document.getElementById('win-message');
+        const playAgainBtn = document.getElementById('play-again');
+        const winBackToMenuBtn = document.getElementById('win-back-to-menu');
+        const themeToggle = document.getElementById('theme-toggle');
+        const closeModalBtn = document.querySelector('.close');
+
+        // Наборы карточек для разных тем
+        const cardSets = {
+            animals: ['🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'],
+            cars: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑'],
+            nature: ['🌲', '🌴', '🌵', '🌷', '🌸', '🍀', '🌿', '🍄']
+        };
+
+        // Переменные игры
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let timer = 0;
+        let timerInterval;
+        let gameMode, gameTheme;
+        let gameStarted = false;
+        let records = JSON.parse(localStorage.getItem('memoryGameRecords')) || [];
+
+        // Настройка темной темы
+        themeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark-theme', themeToggle.checked);
+            localStorage.setItem('darkTheme', themeToggle.checked);
+        });
+
+        // Проверка сохраненной темы
+        if (localStorage.getItem('darkTheme') === 'true') {
+            themeToggle.checked = true;
+            document.body.classList.add('dark-theme');
+        }
+
+        // Начало игры
+        startGameBtn.addEventListener('click', () => {
+            gameTheme = document.querySelector('input[name="theme"]:checked').value;
+            gameMode = document.querySelector('input[name="mode"]:checked').value;
+            
+            mainMenu.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            
+            initGame();
+        });
+
+        // Возврат в меню
+        backToMenuBtn.addEventListener('click', () => {
+            resetGame();
+            gameContainer.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+        });
+
+        // Показать рекорды
+        showRecordsBtn.addEventListener('click', () => {
+            displayRecords();
+            recordsModal.style.display = 'block';
+        });
+
+        // Закрыть модальное окно
+        closeModalBtn.addEventListener('click', () => {
+            recordsModal.style.display = 'none';
+        });
+
+        // Кнопки в модальном окне победы
+        playAgainBtn.addEventListener('click', () => {
+            winModal.style.display = 'none';
+            initGame();
+        });
+
+        winBackToMenuBtn.addEventListener('click', () => {
+            winModal.style.display = 'none';
+            resetGame();
+            gameContainer.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+        });
+
+        // Закрытие модальных окон по клику вне содержимого
+        window.addEventListener('click', (event) => {
+            if (event.target === recordsModal) {
+                recordsModal.style.display = 'none';
+            }
+            if (event.target === winModal) {
+                winModal.style.display = 'none';
+            }
+        });
+
+        // Инициализация игры
+        function initGame() {
+            resetGame();
+            createCards();
+            renderCards();
+            startTimer();
+        }
+
+        // Сброс игры
+        function resetGame() {
+            clearInterval(timerInterval);
+            cards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            timer = 0;
+            timerDisplay.textContent = 'Время: 0 сек';
+            movesDisplay.textContent = 'Ходы: 0';
+            gameBoard.innerHTML = '';
+            gameStarted = false;
+        }
+
+        // Создание карточек
+        function createCards() {
+            const symbols = cardSets[gameTheme];
+            cards = [...symbols, ...symbols];
+            shuffleCards();
+        }
+
+        // Перемешивание карточек
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+        }
+
+        // Отрисовка карточек
+        function renderCards() {
+            gameBoard.innerHTML = '';
+            cards.forEach((symbol, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                cardFront.textContent = symbol;
+                
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card-back';
+                cardBack.textContent = '?';
+                
+                card.appendChild(cardFront);
+                card.appendChild(cardBack);
+                
+                card.addEventListener('click', () => flipCard(card, index));
+                gameBoard.appendChild(card);
+            });
+        }
+
+        // Переворот карточки
+        function flipCard(card, index) {
+            // Пропускаем, если карточка уже открыта или уже выбрано 2 карточки
+            if (card.classList.contains('flipped') || flippedCards.length >= 2) return;
+            
+            if (!gameStarted && gameMode !== 'notime') {
+                startTimer();
+                gameStarted = true;
+            }
+            
+            card.classList.add('flipped');
+            flippedCards.push({ card, index });
+            
+            if (flippedCards.length === 2) {
+                moves++;
+                movesDisplay.textContent = `Ходы: ${moves}`;
+                checkMatch();
+            }
+        }
+
+        // Проверка совпадения
+        function checkMatch() {
+            const [first, second] = flippedCards;
+            
+            if (cards[first.index] === cards[second.index]) {
+                matchedPairs++;
+                flippedCards = [];
+                
+                // Проверка на окончание игры
+                if (matchedPairs === cards.length / 2) {
+                    endGame();
+                }
+            } else {
+                // Закрываем карточки через небольшую задержку
+                setTimeout(() => {
+                    first.card.classList.remove('flipped');
+                    second.card.classList.remove('flipped');
+                    flippedCards = [];
+                    
+                    // В сложном режиме перемешиваем карточки
+                    if (gameMode === 'hard') {
+                        shuffleCards();
+                        renderCards();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Запуск таймера
+        function startTimer() {
+            if (gameMode === 'notime') {
+                timerDisplay.textContent = 'Без времени';
+                return;
+            }
+            
+            clearInterval(timerInterval);
+            timer = 0;
+            timerDisplay.textContent = 'Время: 0 сек';
+            
+            timerInterval = setInterval(() => {
+                timer++;
+                timerDisplay.textContent = `Время: ${timer} сек`;
+            }, 1000);
+        }
+
+        // Завершение игры
+        function endGame() {
+            clearInterval(timerInterval);
+            
+            // Сохраняем рекорд
+            if (gameMode !== 'notime') {
+                saveRecord();
+            }
+            
+            // Показываем модальное окно с результатом
+            let message = 'Вы собрали все пары!';
+            if (gameMode !== 'notime') {
+                message += `<br>Время: ${timer} секунд<br>Ходы: ${moves}`;
+            } else {
+                message += `<br>Ходы: ${moves}`;
+            }
+            
+            winMessage.innerHTML = message;
+            winModal.style.display = 'block';
+        }
+
+        // Сохранение рекорда
+        function saveRecord() {
+            const record = {
+                theme: gameTheme,
+                mode: gameMode,
+                time: timer,
+                moves: moves,
+                date: new Date().toISOString()
+            };
+            
+            // Проверка на лучший результат
+            const existingRecordIndex = records.findIndex(r => 
+                r.theme === gameTheme && r.mode === gameMode
+            );
+            
+            if (existingRecordIndex === -1) {
+                records.push(record);
+            } else {
+                const existingRecord = records[existingRecordIndex];
+                if (timer < existingRecord.time || 
+                    (timer === existingRecord.time && moves < existingRecord.moves)) {
+                    records[existingRecordIndex] = record;
+                }
+            }
+            
+            // Сохранение рек            // Сохранение рекордов в localStorage
+            localStorage.setItem('memoryGameRecords', JSON.stringify(records));
+        }
+
+        // Отображение рекордов
+        function displayRecords() {
+            recordsBody.innerHTML = '';
+            
+            if (records.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4">Пока нет рекордов. Сыграйте, чтобы установить рекорд!</td>';
+                recordsBody.appendChild(row);
+                return;
+            }
+            
+            // Сортировка рекордов: сначала по теме, затем по режиму, затем по времени
+            const sortedRecords = [...records].sort((a, b) => {
+                if (a.theme !== b.theme) return a.theme.localeCompare(b.theme);
+                if (a.mode !== b.mode) return a.mode.localeCompare(b.mode);
+                if (a.time !== b.time) return a.time - b.time;
+                return a.moves - b.moves;
+            });
+            
+            // Добавление строк таблицы
+            sortedRecords.forEach(record => {
+                const row = document.createElement('tr');
+                
+                // Преобразование названий для отображения
+                const themeName = {
+                    'animals': 'Животные',
+                    'cars': 'Машины',
+                    'nature': 'Природа'
+                }[record.theme] || record.theme;
+                
+                const modeName = {
+                    'normal': 'Обычный',
+                    'hard': 'Сложный',
+                    'notime': 'Без времени'
+                }[record.mode] || record.mode;
+                
+                // Время отображается только если режим игры не "без времени"
+                const timeDisplay = record.mode === 'notime' ? 'Н/Д' : `${record.time} сек`;
+                
+                row.innerHTML = `
+                    <td>${themeName}</td>
+                    <td>${modeName}</td>
+                    <td>${timeDisplay}</td>
+                    <td>${record.moves}</td>
+                `;
+                
+                recordsBody.appendChild(row);
+            });
+        }
+
+        // Обработка нажатия клавиш
+        document.addEventListener('keydown', (e) => {
+            // Закрытие модальных окон по Escape
+            if (e.key === 'Escape') {
+                recordsModal.style.display = 'none';
+                winModal.style.display = 'none';
+            }
+        });
+
+        // Изменение размера сетки в зависимости от количества карточек
+        function adjustGridSize() {
+            const numCards = cards.length;
+            let columns;
+            
+            if (window.innerWidth <= 600) {
+                // Мобильная версия
+                columns = 3;
+            } else {
+                // Десктопная версия
+                if (numCards <= 12) columns = 4;
+                else if (numCards <= 16) columns = 4;
+                else columns = 6;
+            }
+            
+            gameBoard.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+        }
+
+        // Обработка изменения размера окна
+        window.addEventListener('resize', adjustGridSize);
+
+        // Звуковые эффекты (опционально)
+        const sounds = {
+            flip: new Audio('flip.mp3'),
+            match: new Audio('match.mp3'),
+            win: new Audio('win.mp3')
+        };
+
+        // Функция для проигрывания звука
+        function playSound(soundName) {
+            // Проверяем наличие звука перед проигрыванием
+            if (sounds[soundName]) {
+                try {
+                    sounds[soundName].currentTime = 0;
+                    sounds[soundName].play().catch(err => {
+                        // Игнорируем ошибки проигрывания (часто возникают в браузерах)
+                        console.log('Звук не был проигран:', err);
+                    });
+                } catch (e) {
+                    console.log('Ошибка при проигрывании звука:', e);
+                }
+            }
+        }
+
+        // Инициализация страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            // Загрузка сохраненных рекордов
+            records = JSON.parse(localStorage.getItem('memoryGameRecords')) || [];
+            
+            // Настройка визуальной темы
+            if (localStorage.getItem('darkTheme') === 'true') {
+                themeToggle.checked = true;
+                document.body.classList.add('dark-theme');
+            }
+        });
+    </script>
+</body>
+</html>
